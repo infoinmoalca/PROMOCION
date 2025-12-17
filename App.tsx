@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -7,7 +8,8 @@ import DocumentScanner from './components/DocumentScanner';
 import StakeholderManager from './components/StakeholderManager';
 import Settings from './components/Settings';
 import AIAssistant from './components/AIAssistant';
-import { ViewState, Project, Stakeholder, Document } from './types';
+import Login from './components/Login';
+import { ViewState, Project, Stakeholder, Document, User } from './types';
 import { MOCK_PROJECTS, MOCK_STAKEHOLDERS, MOCK_DOCUMENTS } from './constants';
 import { CheckCircle, XCircle } from 'lucide-react';
 
@@ -27,11 +29,15 @@ const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 
 };
 
 const App: React.FC = () => {
+  // Auth State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  // Initialize State from LocalStorage if available, otherwise use Mock Data
+  // Initialize Data from LocalStorage if available, otherwise use Mock Data
   const [projects, setProjects] = useState<Project[]>(() => {
     const saved = localStorage.getItem('promotor_projects');
     return saved ? JSON.parse(saved) : MOCK_PROJECTS;
@@ -47,9 +53,16 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : MOCK_DOCUMENTS;
   });
 
+  // --- AUTH CHECK ON MOUNT ---
+  useEffect(() => {
+    const storedUser = localStorage.getItem('promotor_user');
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+    }
+    setLoadingAuth(false);
+  }, []);
+
   // --- AUTO-SAVE LOGIC ---
-  // These effects run automatically whenever the data dependencies change
-  
   useEffect(() => {
     localStorage.setItem('promotor_projects', JSON.stringify(projects));
   }, [projects]);
@@ -62,20 +75,14 @@ const App: React.FC = () => {
     localStorage.setItem('promotor_documents', JSON.stringify(documents));
   }, [documents]);
 
-  // -----------------------
-
   // Capture PWA Install Prompt
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
       console.log('Capture install prompt event');
     };
-
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
@@ -85,7 +92,6 @@ const App: React.FC = () => {
     setNotification({ message, type });
   };
 
-  // Manual Save Function (Still useful for user reassurance, though auto-save works)
   const handleManualSave = () => {
     try {
       localStorage.setItem('promotor_projects', JSON.stringify(projects));
@@ -97,6 +103,25 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLogin = (email: string, name?: string) => {
+    const user: User = {
+      email,
+      name: name || 'Admin',
+      role: 'admin',
+      lastLogin: new Date().toISOString()
+    };
+    setCurrentUser(user);
+    localStorage.setItem('promotor_user', JSON.stringify(user));
+    showNotification(name ? `¡Bienvenido, ${name}!` : 'Sesión iniciada correctamente', 'success');
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('promotor_user');
+    showNotification('Sesión cerrada', 'success');
+  };
+
+  // CRUD Handlers
   const handleAddProject = (newProject: Project) => {
     setProjects(prev => [...prev, newProject]);
     showNotification('Promoción creada', 'success');
@@ -185,12 +210,27 @@ const App: React.FC = () => {
     }
   };
 
+  // If Auth Loading, show simple spinner
+  if (loadingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+         <div className="w-16 h-16 border-4 border-slate-200 border-t-emerald-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // If Not Logged In, Show Login Screen
+  if (!currentUser) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar 
         currentView={currentView} 
         onViewChange={setCurrentView} 
         onSave={handleManualSave}
+        onLogout={handleLogout}
       />
       
       <main className="flex-1 ml-64 p-8">

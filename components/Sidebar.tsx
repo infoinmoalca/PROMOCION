@@ -1,15 +1,16 @@
 
 import React from 'react';
-import { LayoutDashboard, Building2, Calculator, FileText, Settings, PieChart, Users, Save } from 'lucide-react';
+import { LayoutDashboard, Building2, Calculator, FileText, Settings, PieChart, Users, Save, LogOut } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface SidebarProps {
   currentView: ViewState;
   onViewChange: (view: ViewState) => void;
   onSave: () => void;
+  onLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onSave }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onSave, onLogout }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'projects', label: 'Promociones', icon: Building2 },
@@ -67,6 +68,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onSave }) 
         >
           <Settings size={20} />
           <span>Configuración</span>
+        </button>
+        
+        <button 
+          onClick={onLogout}
+          className="flex items-center gap-3 px-4 py-2 w-full rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-800 transition-colors"
+        >
+          <LogOut size={20} />
+          <span>Cerrar Sesión</span>
         </button>
       </div>
     </div>

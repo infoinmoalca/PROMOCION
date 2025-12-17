@@ -6,6 +6,13 @@ export enum ProjectStatus {
   COMPLETED = 'Entregado'
 }
 
+export interface User {
+  email: string;
+  name: string;
+  role: 'admin' | 'user';
+  lastLogin: string;
+}
+
 export interface ProjectAction {
   id: string;
   date: string;
